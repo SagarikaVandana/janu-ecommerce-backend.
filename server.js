@@ -30,10 +30,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Security middleware
 
-app.use('/api/auth', authRoutes);
-console.log('Auth routes registered');
-
-
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -42,27 +38,102 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // CORS configuration
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173', 
+  'http://localhost:5174',
+  'http://localhost:5175',
+  'https://janu-ecommerce-frontend-git-main-janu-collectionss-projects.vercel.app',
+  'https://janu-collections.vercel.app',
+  'https://janu-ecommerce-frontend.vercel.app'
+];
+
+// Add environment-specific frontend URL if provided
+if (process.env.FRONTEND_URL) {
+  allowedOrigins.push(process.env.FRONTEND_URL);
+}
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL 
-    : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('Blocked by CORS:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 // Static files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // MongoDB connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/janu-collections')
-  .then(() => {
-    console.log('Connected to MongoDB');
-    console.log('Database:', mongoose.connection.name);
-  })
-  .catch((error) => {
-    console.error('MongoDB connection error:', error);
-    console.error('Please ensure MongoDB is running and the connection string is correct');
+const mongoUri = process.env.MONGODB_URI;
+const isProduction = process.env.NODE_ENV === 'production';
+
+if (!mongoUri) {
+  console.error('❌ MONGODB_URI environment variable is not set!');
+  if (isProduction) {
+    console.error('🚨 PRODUCTION ERROR: MONGODB_URI is required in production!');
+    console.error('Please set MONGODB_URI in your Render environment variables.');
+    console.error('Use MongoDB Atlas connection string: mongodb+srv://username:password@cluster.mongodb.net/database');
     process.exit(1);
-  });
+  } else {
+    console.error('⚠️ DEVELOPMENT: Using local MongoDB fallback');
+    console.error('For production, set MONGODB_URI environment variable');
+  }
+}
+
+// Determine connection string
+let connectionString;
+if (mongoUri) {
+  connectionString = mongoUri;
+} else {
+  // Development fallback
+  connectionString = 'mongodb://localhost:27017/janu-collections';
+  console.log('🔧 Using development MongoDB: localhost:27017');
+}
+
+mongoose.connect(connectionString, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+})
+.then(() => {
+  console.log('✅ Connected to MongoDB');
+  console.log('📊 Database:', mongoose.connection.name);
+  if (mongoUri) {
+    console.log('🔗 Connection URL:', mongoUri.replace(/\/\/[^:]+:[^@]+@/, '//***:***@')); // Hide credentials
+  }
+})
+.catch((error) => {
+  console.error('❌ MongoDB connection error:', error.message);
+  console.error('🔍 Connection details:');
+  console.error('   - Environment:', process.env.NODE_ENV || 'development');
+  console.error('   - URI provided:', !!mongoUri);
+  console.error('   - Using fallback:', !mongoUri);
+  
+  if (isProduction) {
+    console.error('🚨 PRODUCTION ERROR: Cannot connect to MongoDB Atlas');
+    console.error('Please ensure:');
+    console.error('1. MONGODB_URI is set in Render environment variables');
+    console.error('2. MongoDB Atlas cluster is running');
+    console.error('3. Network access is configured for 0.0.0.0/0');
+    console.error('4. Database user has proper permissions');
+    process.exit(1);
+  } else {
+    console.error('⚠️ DEVELOPMENT: Make sure MongoDB is running locally');
+    console.error('Run: mongod (or start MongoDB service)');
+    process.exit(1);
+  }
+});
 
 // Handle MongoDB connection events
 mongoose.connection.on('disconnected', () => {
@@ -81,6 +152,8 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/payment-settings', paymentSettingsRoutes);
 app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/users', userRoutes);
+
+console.log('✅ All routes registered successfully');
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -102,5 +175,7 @@ app.use('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
 });

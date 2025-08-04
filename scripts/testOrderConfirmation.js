@@ -20,7 +20,7 @@ async function testOrderConfirmation() {
 
     // Step 1: Create a test user
     console.log('1. Creating test user...');
-    const userResponse = await axios.post('http://localhost:5000/api/auth/register', {
+    const userResponse = await axios.post('https://janu-ecommerce-backend.onrender.com/api/auth/register', {
       name: 'Test Customer',
       email: 'testcustomer4@example.com',
       password: 'password123'
@@ -56,7 +56,7 @@ async function testOrderConfirmation() {
       paymentMethod: 'bank_transfer'
     };
 
-    const orderResponse = await axios.post('http://localhost:5000/api/orders', orderData, {
+    const orderResponse = await axios.post('https://janu-ecommerce-backend.onrender.com/api/orders', orderData, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -68,7 +68,7 @@ async function testOrderConfirmation() {
 
     // Step 3: Login as admin
     console.log('\n3. Logging in as admin...');
-    const adminResponse = await axios.post('http://localhost:5000/api/auth/login', {
+    const adminResponse = await axios.post('https://janu-ecommerce-backend.onrender.com/api/auth/login', {
       email: 'admin@janucollections.com',
       password: 'admin123'
     });
@@ -78,7 +78,7 @@ async function testOrderConfirmation() {
 
     // Step 4: Confirm the order (this should trigger notifications)
     console.log('\n4. Confirming order (this will trigger notifications)...');
-    const confirmResponse = await axios.put(`http://localhost:5000/api/admin/orders/${order._id}`, {
+    const confirmResponse = await axios.put(`https://janu-ecommerce-backend.onrender.com/api/admin/orders/${order._id}`, {
       status: 'confirmed'
     }, {
       headers: {

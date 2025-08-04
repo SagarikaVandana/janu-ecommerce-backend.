@@ -39,7 +39,6 @@ const newsletterSchema = new mongoose.Schema({
 });
 
 // Index for better performance
-newsletterSchema.index({ email: 1 });
 newsletterSchema.index({ isActive: 1 });
 newsletterSchema.index({ subscribedAt: -1 });
 
