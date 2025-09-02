@@ -43,7 +43,7 @@ const allowedOrigins = [
   'http://localhost:5173', 
   'http://localhost:5174', 
   'http://localhost:5175',
-  'https://janu-ecommerce-frontend.vercel.app',
+  'https://janu-ecommerce-frontend.onrender.com',
   'https://janu-ecommerce-frontend-git-main-sagarikavandanas-projects.vercel.app',
   'https://janu-ecommerce-frontend-*.vercel.app'
 ];
